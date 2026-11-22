@@ -10,20 +10,32 @@ exports.handler = async function () {
 
     const html = await response.text();
 
+    const scripts = [
+      ...html.matchAll(/<script[^>]*src=["']([^"']+)["']/gi)
+    ].map(match => match[1]);
+
+    const dataScripts = [
+      ...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)
+    ]
+      .map(match => match[1])
+      .filter(script =>
+        script.includes("__NEXT_DATA__") ||
+        script.includes("events") ||
+        script.includes("odds")
+      );
+
     return {
       statusCode: 200,
       headers: {
-        "Content-Type": "application/json",
-        "Access-Control-Allow-Origin": "*"
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        success: response.ok,
+        success: true,
         status: response.status,
-        contentType: response.headers.get("content-type"),
         htmlLength: html.length,
-        pageTitle: html.match(/<title[^>]*>(.*?)<\/title>/i)?.[1] || null,
-        containsFootball: html.toLowerCase().includes("football"),
-        preview: html.substring(0, 1500)
+        scripts,
+        dataScripts: dataScripts.map(script => script.substring(0, 3000)),
+        htmlContainsNextData: html.includes("__NEXT_DATA__")
       }, null, 2)
     };
 
@@ -31,7 +43,6 @@ exports.handler = async function () {
     return {
       statusCode: 500,
       body: JSON.stringify({
-        success: false,
         error: error.message
       })
     };
