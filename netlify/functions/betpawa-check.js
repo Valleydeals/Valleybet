@@ -1,28 +1,54 @@
 exports.handler = async function () {
-  const url = "https://www.betpawa.co.ke/events?categoryId=2";
+  const pageUrl = "https://www.betpawa.co.ke/events?categoryId=2";
 
   try {
-    const response = await fetch(url, {
+    const pageResponse = await fetch(pageUrl, {
       headers: {
         "User-Agent": "Mozilla/5.0"
       }
     });
 
-    const html = await response.text();
+    const html = await pageResponse.text();
 
-    const scripts = [
+    const scriptPaths = [
       ...html.matchAll(/<script[^>]*src=["']([^"']+)["']/gi)
     ].map(match => match[1]);
 
-    const dataScripts = [
-      ...html.matchAll(/<script[^>]*>([\s\S]*?)<\/script>/gi)
-    ]
-      .map(match => match[1])
-      .filter(script =>
-        script.includes("__NEXT_DATA__") ||
-        script.includes("events") ||
-        script.includes("odds")
-      );
+    const results = [];
+
+    for (const path of scriptPaths.slice(0, 8)) {
+      const scriptUrl = new URL(path, pageUrl).href;
+
+      try {
+        const response = await fetch(scriptUrl);
+        const script = await response.text();
+
+        const keywords = [
+          "events",
+          "odds",
+          "markets",
+          "football",
+          "fixtures"
+        ];
+
+        const found = keywords.filter(keyword =>
+          script.toLowerCase().includes(keyword)
+        );
+
+        results.push({
+          script: scriptUrl,
+          status: response.status,
+          size: script.length,
+          keywordsFound: found
+        });
+
+      } catch (error) {
+        results.push({
+          script: scriptUrl,
+          error: error.message
+        });
+      }
+    }
 
     return {
       statusCode: 200,
@@ -31,11 +57,8 @@ exports.handler = async function () {
       },
       body: JSON.stringify({
         success: true,
-        status: response.status,
-        htmlLength: html.length,
-        scripts,
-        dataScripts: dataScripts.map(script => script.substring(0, 3000)),
-        htmlContainsNextData: html.includes("__NEXT_DATA__")
+        scriptsChecked: results.length,
+        results
       }, null, 2)
     };
 
@@ -43,6 +66,7 @@ exports.handler = async function () {
     return {
       statusCode: 500,
       body: JSON.stringify({
+        success: false,
         error: error.message
       })
     };
