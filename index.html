@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ValleyBet - Sports Betting</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<header class="header">
+  <div class="logo">
+    <span>VALLEY</span><strong>BET</strong>
+  </div>
+
+  <button class="slip-button" onclick="toggleSlip()">
+    🎫 Slip <span id="slipCount">0</span>
+  </button>
+</header>
+
+<nav class="navigation" id="navigation">
+  <a href="#" class="active">Home</a>
+  <a href="#">Football</a>
+  <a href="#">Live</a>
+  <a href="#">Results</a>
+</nav>
+
+<main>
+
+  <section class="welcome">
+    <h1>Welcome to ValleyBet</h1>
+    <p>Football betting and live scores</p>
+  </section>
+<section class="quick-menu">
+  <button class="quick-item active" onclick="filterMatches('all', this)">
+    ⚽ All
+  </button>
+
+  <button class="quick-item" onclick="filterMatches('live', this)">
+    🔴 Live
+  </button>
+
+  <button class="quick-item" onclick="filterMatches('upcoming', this)">
+    📅 Upcoming
+  </button>
+
+  <button class="quick-item" onclick="filterMatches('results', this)">
+    🏆 Results
+  </button>
+</section>
+
+<div class="search-container">
+  <input
+    type="search"
+    id="matchSearch"
+    placeholder="Search teams or leagues..."
+    oninput="searchMatches()"
+  >
+</div>
+  
+  </section>
+
+  <section class="section">
+
+    <div class="section-header">
+      <h2>⚽ Today's Matches</h2>
+    </div>
+
+    <div id="matches"></div>
+
+  </section>
+
+</main>
+
+<!-- BETTING SLIP -->
+
+<div class="slip-overlay" id="slipOverlay" onclick="closeSlip()"></div>
+
+<div class="bet-slip" id="betSlip">
+
+  <div class="slip-header">
+    <h2>Betting Slip</h2>
+    <button onclick="closeSlip()">✕</button>
+  </div>
+
+  <div id="slipSelections"></div>
+
+  <div class="slip-footer">
+
+    <div class="total-odds">
+      <span>Total Odds</span>
+      <strong id="totalOdds">1.00</strong>
+    </div>
+
+    <label for="stake">Stake (KES)</label>
+
+    <input
+      type="number"
+      id="stake"
+      placeholder="Enter stake"
+      min="1"
+      oninput="calculatePayout()"
+    >
+
+    <div class="payout">
+      <span>Potential Payout</span>
+      <strong id="potentialPayout">KES 0.00</strong>
+    </div>
+
+    <button class="place-bet-btn" onclick="placeBet()">
+      Place Bet
+    </button>
+
+  </div>
+
+</div>
+
+<footer>
+  <p>© 2026 ValleyBet</p>
+  <p>Football • Live Scores • Odds</p>
+</footer>
+
+<script src="app.js"></script>
+
+</body>
+</html>
