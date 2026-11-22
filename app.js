@@ -1,46 +1,87 @@
+
+const API_URL = "/.netlify/functions/matches";
+
 // ===============================
 // MATCH DATA
 // ===============================
 
-const matches = [
-  {
-    id: 1,
-    league: "Premier League",
-    home: "Manchester City",
-    away: "Liverpool",
-    time: "18:00",
-    status: "upcoming",
-    odds: ["2.10", "3.40", "3.20"]
-  },
-  {
-    id: 2,
-    league: "La Liga",
-    home: "Real Madrid",
-    away: "Barcelona",
-    time: "20:00",
-    status: "upcoming",
-    odds: ["2.45", "3.20", "2.75"]
-  },
-  {
-    id: 3,
-    league: "Serie A",
-    home: "Inter Milan",
-    away: "AC Milan",
-    time: "21:00",
-    status: "upcoming",
-    odds: ["1.95", "3.50", "3.80"]
-  }
-];
-
-// ===============================
-// BETTING SLIP
-// ===============================
+let matches = [];
 
 let betSlip = [];
 
 let currentFilter = "all";
 
 let searchQuery = "";
+
+// ===============================
+// LOAD MATCHES FROM NETLIFY API
+// ===============================
+
+async function loadMatches() {
+
+  const container = document.getElementById("matches");
+
+  if (container) {
+    container.innerHTML = `
+      <div class="loading">Loading matches...</div>
+    `;
+  }
+
+  try {
+
+    const response = await fetch(API_URL);
+
+    if (!response.ok) {
+      throw new Error("Failed to fetch matches");
+    }
+
+    const data = await response.json();
+
+    if (!data.success || !Array.isArray(data.matches)) {
+      throw new Error("Invalid API response");
+    }
+
+    matches = data.matches.map(match => {
+
+      const odds = match.odds || {};
+
+      return {
+        id: match.id,
+        league: match.league || "Football",
+        home: match.home,
+        away: match.away,
+        time: match.time || "",
+        status: match.status || "upcoming",
+        odds: [
+          String(odds.home ?? 0),
+          String(odds.draw ?? 0),
+          String(odds.away ?? 0)
+        ]
+      };
+
+    });
+
+    renderFilteredMatches();
+
+    updateSlip();
+
+  } catch (error) {
+
+    console.error("Match loading error:", error);
+
+    if (container) {
+      container.innerHTML = `
+        <div class="empty-slip">
+          Unable to load matches.
+          <br><br>
+          Please refresh the page.
+        </div>
+      `;
+    }
+
+  }
+
+}
 
 // ===============================
 // RENDER MATCHES
@@ -78,6 +119,7 @@ function renderFilteredMatches() {
     `;
 
     return;
+
   }
 
   filtered.forEach(match => {
@@ -154,16 +196,15 @@ function renderFilteredMatches() {
 function selectOdd(matchId, selection, odds) {
 
   const match = matches.find(
-    m => m.id === matchId
+    m => String(m.id) === String(matchId)
   );
 
   if (!match) return;
 
   const existingIndex = betSlip.findIndex(
-    bet => bet.matchId === matchId
+    bet => String(bet.matchId) === String(matchId)
   );
 
-  // Remove same selection
   if (
     existingIndex !== -1 &&
     betSlip[existingIndex].selection === selection
@@ -173,26 +214,17 @@ function selectOdd(matchId, selection, odds) {
 
   } else {
 
-    // Remove other selection from same match
     if (existingIndex !== -1) {
-
       betSlip.splice(existingIndex, 1);
-
     }
 
-    // Add new selection
     betSlip.push({
 
       matchId: match.id,
-
       league: match.league,
-
       home: match.home,
-
       away: match.away,
-
       selection: selection,
-
       odds: Number(odds)
 
     });
@@ -240,7 +272,6 @@ function updateSlip() {
       item.className = "slip-selection";
 
       item.innerHTML = `
-
         <div class="selection-top">
 
           <div>
@@ -271,7 +302,6 @@ function updateSlip() {
           </div>
 
         </div>
-
       `;
 
       container.appendChild(item);
@@ -311,23 +341,19 @@ function updateTotalOdds() {
   let total = 1;
 
   betSlip.forEach(bet => {
-
     total *= bet.odds;
-
   });
 
   const element = document.getElementById("totalOdds");
 
   if (element) {
-
     element.textContent = total.toFixed(2);
-
   }
 
 }
 
 // ===============================
-// PAYOUT CALCULATION
+// CALCULATE PAYOUT
 // ===============================
 
 function calculatePayout() {
@@ -343,9 +369,7 @@ function calculatePayout() {
   let totalOdds = 1;
 
   betSlip.forEach(bet => {
-
     totalOdds *= bet.odds;
-
   });
 
   const payout = stake * totalOdds;
@@ -359,15 +383,13 @@ function calculatePayout() {
 }
 
 // ===============================
-// HIGHLIGHT SELECTED ODDS
+// SELECTED ODDS HIGHLIGHT
 // ===============================
 
 function updateSelectedButtons() {
 
   document.querySelectorAll(".odd").forEach(button => {
-
     button.classList.remove("selected");
-
   });
 
   betSlip.forEach(bet => {
@@ -377,9 +399,7 @@ function updateSelectedButtons() {
     );
 
     if (button) {
-
       button.classList.add("selected");
-
     }
 
   });
@@ -393,10 +413,10 @@ function updateSelectedButtons() {
 function toggleSlip() {
 
   document.getElementById("betSlip")
-    .classList.add("open");
+    ?.classList.add("open");
 
   document.getElementById("slipOverlay")
-    .classList.add("show");
+    ?.classList.add("show");
 
 }
 
@@ -407,10 +427,10 @@ function toggleSlip() {
 function closeSlip() {
 
   document.getElementById("betSlip")
-    .classList.remove("open");
+    ?.classList.remove("open");
 
   document.getElementById("slipOverlay")
-    .classList.remove("show");
+    ?.classList.remove("show");
 
 }
 
@@ -429,7 +449,7 @@ function placeBet() {
   }
 
   const stake = Number(
-    document.getElementById("stake").value
+    document.getElementById("stake")?.value
   );
 
   if (!stake || stake <= 0) {
@@ -441,12 +461,12 @@ function placeBet() {
   }
 
   alert(
-    "BETTING SLIP\\n\\n" +
-    "Selections: " + betSlip.length + "\\n" +
-    "Stake: KES " + stake + "\\n" +
+    "BETTING SLIP\n\n" +
+    "Selections: " + betSlip.length + "\n" +
+    "Stake: KES " + stake + "\n" +
     "Total Odds: " +
     document.getElementById("totalOdds").textContent +
-    "\\nPotential Payout: " +
+    "\nPotential Payout: " +
     document.getElementById("potentialPayout").textContent
   );
 
@@ -461,15 +481,11 @@ function filterMatches(filter, button) {
   currentFilter = filter;
 
   document.querySelectorAll(".quick-item").forEach(item => {
-
     item.classList.remove("active");
-
   });
 
   if (button) {
-
     button.classList.add("active");
-
   }
 
   renderFilteredMatches();
@@ -498,13 +514,8 @@ function searchMatches() {
 
 function toggleMenu() {
 
-  const navigation = document.getElementById("navigation");
-
-  if (navigation) {
-
-    navigation.classList.toggle("hidden");
-
-  }
+  document.getElementById("navigation")
+    ?.classList.toggle("hidden");
 
 }
 
@@ -512,6 +523,4 @@ function toggleMenu() {
 // INITIALIZE
 // ===============================
 
-renderFilteredMatches();
-
-updateSlip();
+loadMatches();
